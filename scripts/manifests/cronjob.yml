@@ -1,0 +1,71 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: {{ APP_NAME }}
+spec:
+  schedule: {{ SCHEDULE }}
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: {{ APP_NAME }}
+          annotations:
+            #iam.amazonaws.com/role: arn:aws:iam::
+        spec:
+          containers:
+          - name: {{ APP_NAME }}
+            imagePullPolicy: Always
+            image: {{ DOCKER_IMAGE }}          
+            env:
+            - name: CLUSTER
+              value: {{ CLUSTER_NAME }}
+
+            - name: AWS_REGION
+              value: {{ AWS_REGION }}
+
+            - name: APP_NAMESPACE
+              value: {{ APP_NAMESPACE }}
+
+            - name: DEPLOYMENT_NAME
+              value: {{ DEPLOYMENT_NAME }}
+
+            - name: POD_NAME
+              value: {{ POD_NAME }}
+
+            - name: FIRST_SCALE
+              value: {{ FIRST_SCALE }}
+
+            - name: SECOND_SCALE
+              value: {{ SECOND_SCALE }}
+
+            - name: THIRD_SCALE
+              value: {{ THIRD_SCALE }}
+
+            - name: RABBIT_USER
+              valueFrom:
+                secretKeyRef:
+                  name: rabbit-user
+                  key: user
+
+            - name: RABBIT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: rabbit-password
+                  key: password
+
+            - name: RABBIT_URL
+              value: {{ RABBIT_URL }}
+            
+            - name: RABBIT_PORT
+              value: "5672"
+              
+            - name: RABBIT_QUEUE
+              value: {{ RABBIT_QUEUE }}
+             
+            command: 
+              - /bin/sh
+              - -c 
+              - aws eks update-kubeconfig --name ${CLUSTER}; python3 -m src.rabbit-scale-in-out
+            
+          restartPolicy: OnFailure
